@@ -29,10 +29,10 @@ Route::any('/', function () {
  
  Route::post('/login',[UserControler::class, 'loginUser'])->name('login.loginUser');
  
- Route::get('/getuser',[UserControler::class, 'GetUser'])->name('getuser.GetUser');
- 
- Route::delete('/delete/{id}',[UserControler::class, 'DeleteUser'])->name('delete.DeleteUser');
-  
- Route::put('/update',[UserControler::class, 'UpdateUser'])->name('update.UpdateUser');
- 
- 
+ Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/getuser', [UserController::class, 'GetUser'])->name('getuser.GetUser');
+
+    Route::delete('/delete/{id}', [UserController::class, 'DeleteUser'])->name('delete.DeleteUser');
+    
+    Route::put('/update', [UserController::class, 'UpdateUser'])->name('update.UpdateUser');
+});

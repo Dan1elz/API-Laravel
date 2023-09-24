@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'api' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+            'hash' => false, // Certifique-se de que 'hash' está definido como falso para usar Sanctum.
+        ],
     ],
 
     /*

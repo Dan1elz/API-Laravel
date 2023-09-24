@@ -1,9 +1,16 @@
 <?php
-
 namespace App\Http\Controllers;
+
+// require ('./vendor/autoload.php');
 
 use Illuminate\Http\Request;
 use App\Models\User;
+// use Firebase\JWT\JWT;
+// use Firebase\JWT\Key;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\NewAccessToken;
+
+
 class UserControler extends Controller
 {
     public function RegisterUser(Request $request)
@@ -41,7 +48,26 @@ class UserControler extends Controller
     }
     public function loginUser(Request $request)
     {
-        
+   
+        $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+        if(Auth::attempt(['email' => $request->email, 'password' => $request->password]))
+        {
+            $user = Auth::user();
+            $token = $user->createToken($request->tokenName)->plainTextToken;
+
+            return response()->json([
+                'error'=> false,
+                'message'=> 'Usuario Autentificado com sucesso!',
+                'token' => $token
+            ]);
+        }
+        return response()->json([
+            'error' => true,
+            'message' => 'Credenciais inválidas',
+        ], 401);
     }
     public function GetUser()
     {
