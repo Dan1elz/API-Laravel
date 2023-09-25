@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Sanctum;
 // use Firebase\JWT\JWT;
 // use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Auth;
@@ -55,8 +56,12 @@ class UserControler extends Controller
         ]);
         if(Auth::attempt(['email' => $request->email, 'password' => $request->password]))
         {
+            /** @var \App\Models\MyUserModel $user **/
             $user = Auth::user();
-            $token = $user->createToken($request->tokenName)->plainTextToken;
+
+            $expiration = now()->addMinutes(120);
+            $tokenName = 'access_token';
+            $token = $user->createToken($tokenName, ['id' => $user->id, 'exp' => $expiration->timestamp])->plainTextToken;
 
             return response()->json([
                 'error'=> false,
@@ -69,9 +74,15 @@ class UserControler extends Controller
             'message' => 'Credenciais inválidas',
         ], 401);
     }
-    public function GetUser()
+    public function GetUser(Request $request)
     {
+        $user = Auth::User();
 
+        return response()->json([
+            'error'=> false,
+            'message'=> 'Usuario Autentificado com sucesso!',
+            'data' =>$user,
+        ]);
     }
     public function DeleteUser()
     {
