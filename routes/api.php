@@ -32,7 +32,9 @@ Route::any('/', function () {
  Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/getuser', [UserControler::class, 'GetUser'])->name('getuser.GetUser');
 
-    Route::delete('/delete/{id}', [UserControler::class, 'DeleteUser'])->name('delete.DeleteUser');
+    Route::get('disconect', [UserControler::class, 'DisconectUser'])->name('disconect.DisconectUser');
+
+    Route::delete('/delete', [UserControler::class, 'DestroyUser'])->name('delete.DestroyUser');
 
     Route::put('/update', [UserControler::class, 'UpdateUser'])->name('update.UpdateUser');
 });

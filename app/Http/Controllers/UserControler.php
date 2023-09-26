@@ -27,7 +27,7 @@ class UserControler extends Controller
                 return response()->json([
                     'error' => true,
                     'message' => 'Email ja esta sendo utilizado!'
-                ]); 
+                ], 401);
             }
            
             $newRegistry = new User();
@@ -45,7 +45,7 @@ class UserControler extends Controller
         return response()->json([
             'error' => true,
             'message' => 'Não tem todos os parametros necessarios!'
-           ]); 
+        ], 401);
     }
     public function loginUser(Request $request)
     {
@@ -74,22 +74,61 @@ class UserControler extends Controller
             'message' => 'Credenciais inválidas',
         ], 401);
     }
-    public function GetUser(Request $request)
+    public function GetUser()
     {
         $user = Auth::User();
-
+        if($user){
+            return response()->json([
+                'error'=> false,
+                'message'=> 'Usuario Autentificado com sucesso!',
+                'data' =>$user,
+            ]);
+        }
         return response()->json([
-            'error'=> false,
-            'message'=> 'Usuario Autentificado com sucesso!',
-            'data' =>$user,
-        ]);
+            'error'=> true,
+            'message'=> 'Usuario Não Encontrado!',
+        ], 401);
     }
-    public function DeleteUser()
+    public function DisconectUser(Request $request) 
     {
+        /** @var \App\Models\MyUserModel $user **/
+        $user = Auth::User();
+        if($user){
+            $user->tokens()->delete();
+            $request->user()->currentAccessToken()->delete();
 
+            return response()->json([
+                'error'=> false,
+                'message'=> 'Usuario Desconectado Com Sucesso!',
+            ]);
+        }
+        return response()->json([
+            'error'=> true,
+            'message'=> 'Usuario Invalido!',
+        ], 401);
+        
+    }
+    public function DestroyUser()
+    {
+        /** @var \App\Models\MyUserModel $user **/
+        $user = Auth::User();
+        if($user){
+            $user->tokens()->delete();
+            $user->delete();
+
+            return response()->json([
+                'error'=>false,
+                'message'=>'Conta Deletada!',
+            ]);
+            
+        }
+        return response()->json([
+            'error'=> true,
+            'message'=> 'Usuario Invalido!',
+        ], 401);
     }
     public function UpdateUser()
     {
-
+        
     }
 }
