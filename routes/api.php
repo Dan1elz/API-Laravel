@@ -30,7 +30,11 @@ Route::any('/', function () {
  Route::post('/login',[UserControler::class, 'loginUser'])->name('login.loginUser');
 
  Route::middleware(['auth:sanctum'])->group(function () {
+
     Route::get('/getuser', [UserControler::class, 'GetUser'])->name('getuser.GetUser');
+
+    Route::get('/edit', [UserControler::class, 'EditUser'])->name('edit.EditUser');
+
 
     Route::get('disconect', [UserControler::class, 'DisconectUser'])->name('disconect.DisconectUser');
 

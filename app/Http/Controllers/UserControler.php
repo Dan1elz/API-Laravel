@@ -10,6 +10,7 @@ use App\Models\Sanctum;
 // use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\NewAccessToken;
+use Illuminate\Support\Facades\Hash;
 
 
 class UserControler extends Controller
@@ -77,7 +78,8 @@ class UserControler extends Controller
     public function GetUser()
     {
         $user = Auth::User();
-        if($user){
+        if($user)
+        {
             return response()->json([
                 'error'=> false,
                 'message'=> 'Usuario Autentificado com sucesso!',
@@ -112,7 +114,8 @@ class UserControler extends Controller
     {
         /** @var \App\Models\MyUserModel $user **/
         $user = Auth::User();
-        if($user){
+        if($user)
+        {
             $user->tokens()->delete();
             $user->delete();
 
@@ -127,8 +130,61 @@ class UserControler extends Controller
             'message'=> 'Usuario Invalido!',
         ], 401);
     }
-    public function UpdateUser()
+    public function EditUser()
     {
-        
+        $user = Auth::User();
+        if($user)
+        {
+            return response()->json([
+                'error'=> false,
+                'message'=> 'Pode atualizar!',
+                'data' =>$user,
+            ]);
+        }
+        return response()->json([
+            'error'=> true,
+            'message'=> 'Usuario Não Encontrado!',
+        ], 401);
+    }
+    public function UpdateUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'lastname' => 'required|string',
+            'password' => 'required|string',
+        ]);
+        $user = Auth::User();
+        if($user)
+        {
+             /** @var \App\Models\MyUserModel $user **/
+            if (Hash::check($request->input('password'), $user->password)) 
+            {
+                $user->tokens()->delete();
+
+                $user->update([
+                    'name' => $request->input('name'),
+                    'lastname' => $request->input('lastname'),
+                ]);
+    
+                $expiration = now()->addMinutes(120);
+                $tokenName = 'access_token';
+                $token = $user->createToken($tokenName, ['id' => $user->id, 'exp' => $expiration->timestamp])->plainTextToken;
+    
+                return response()->json([
+                    'error' => false,
+                    'message' => 'Dados de usuário alterados com sucesso!',
+                    'token' => $token,
+                ]);
+            }
+            return response()->json([
+                'error'=> true,
+                'message'=> 'Senha Invalida!',
+            ]);
+        }
+        return response()->json([
+            'error'=> true,
+            'message'=> 'Usuario nao encontrado!',
+        ]);
+    
     }
 }
