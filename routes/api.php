@@ -17,28 +17,28 @@ use App\Http\Controllers\ {
 |
 */
 
-Route::any('/', function () {
+Route::fallback(function () {
     return response()->json([
-     'error' => true,
-     'message' => 'rota nao informada corretamente'
-    ]); 
- });
+        'error' => true,
+        'message' => 'Rota não informada corretamente',
+    ], 404);
+});
  
- 
- Route::post('/register',[UserControler::class, 'RegisterUser'])->name('register.RegisterUser');
+// Rotas de Autentificação
+ Route::post('/register',[UserControler::class, 'registerUser'])->name('register.registerUser');
  
  Route::post('/login',[UserControler::class, 'loginUser'])->name('login.loginUser');
 
+ // Rotas Protegidas por Autentificação 
  Route::middleware(['auth:sanctum'])->group(function () {
 
-    Route::get('/getuser', [UserControler::class, 'GetUser'])->name('getuser.GetUser');
+    Route::get('/getuser', [UserControler::class, 'getUser'])->name('getuser.getUser');
 
-    Route::get('/edit', [UserControler::class, 'EditUser'])->name('edit.EditUser');
+    Route::get('/edit', [UserControler::class, 'editUser'])->name('edit.editUser');
 
+    Route::get('disconect', [UserControler::class, 'disconectUser'])->name('disconect.disconectUser');
 
-    Route::get('disconect', [UserControler::class, 'DisconectUser'])->name('disconect.DisconectUser');
+    Route::delete('/delete', [UserControler::class, 'destroyUser'])->name('delete.destroyUser');
 
-    Route::delete('/delete', [UserControler::class, 'DestroyUser'])->name('delete.DestroyUser');
-
-    Route::put('/update', [UserControler::class, 'UpdateUser'])->name('update.UpdateUser');
+    Route::put('/update', [UserControler::class, 'updateUser'])->name('update.updateUser');
 });

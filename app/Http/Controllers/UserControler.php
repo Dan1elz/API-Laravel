@@ -15,47 +15,37 @@ use Illuminate\Support\Facades\Hash;
 
 class UserControler extends Controller
 {
-    public function RegisterUser(Request $request)
+    public function registerUser(Request $request)
     {
-        $params = ['name','lastname','email','password'];
-        if($request->has($params)) {
-            
-            $data = $request->all();
+        $validatedData = $request->validate([
+            'name' => 'required|min:3|max:25',
+            'lastname' => 'required|min:3|max:25',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6|max:32',
+        ]);
+       
+        $registry = User::where('email', $validatedData['email'])->first();
 
-            $registry = User::where('email', $data['email'])->first();
-
-            if($registry) {
-                return response()->json([
-                    'error' => true,
-                    'message' => 'Email ja esta sendo utilizado!'
-                ], 401);
-            }
-           
-            $newRegistry = new User();
-            $newRegistry->name = $data['name'];
-            $newRegistry->lastname = $data['lastname'];
-            $newRegistry->email = $data['email'];
-            $newRegistry->password = $data['password'];
-            $newRegistry->save();
-           
-            return response()->json([
-                'error' => false,
-                'message' => 'Usuario cadastrado com sucesso!'
-               ]); 
+        if ($registry)
+        {
+            return $this->error('Email já está sendo utilizado!',401);
         }
-        return response()->json([
-            'error' => true,
-            'message' => 'Não tem todos os parametros necessarios!'
-        ], 401);
+        $newRegistry = new User();
+        $newRegistry->name = $validatedData['name'];
+        $newRegistry->lastname = $validatedData['lastname'];
+        $newRegistry->email = $validatedData['email'];
+        $newRegistry->password = Hash::make($validatedData['password']);
+        $newRegistry->save();
+        
+        return $this->success('Usuário cadastrado com sucesso!', null);
     }
     public function loginUser(Request $request)
     {
-   
-        $request->validate([
+        $credentials = $request->validate([
             'email' => 'required|string|email',
-            'password' => 'required|string',
+            'password' =>'required|min:6|max:32',
         ]);
-        if(Auth::attempt(['email' => $request->email, 'password' => $request->password]))
+        if (Auth::attempt($credentials)) 
         {
             /** @var \App\Models\MyUserModel $user **/
             $user = Auth::user();
@@ -64,89 +54,58 @@ class UserControler extends Controller
             $tokenName = 'access_token';
             $token = $user->createToken($tokenName, ['id' => $user->id, 'exp' => $expiration->timestamp])->plainTextToken;
 
-            return response()->json([
-                'error'=> false,
-                'message'=> 'Usuario Autentificado com sucesso!',
-                'token' => $token
-            ]);
+            return $this->success('Usuario Autentificado com sucesso!', $token);
         }
-        return response()->json([
-            'error' => true,
-            'message' => 'Credenciais inválidas',
-        ], 401);
+        return $this->error('Credenciais inválidas',401);
     }
-    public function GetUser()
+    public function getUser()
     {
         $user = Auth::User();
         if($user)
         {
-            return response()->json([
-                'error'=> false,
-                'message'=> 'Usuario Autentificado com sucesso!',
-                'data' =>$user,
-            ]);
+            return $this->success('Usuario Autentificado com sucesso!', $user);
         }
-        return response()->json([
-            'error'=> true,
-            'message'=> 'Usuario Não Encontrado!',
-        ], 401);
+        return $this->error('Usuario Não Encontrado!',401);
     }
-    public function DisconectUser(Request $request) 
+    public function disconectUser(Request $request) 
     {
         /** @var \App\Models\MyUserModel $user **/
         $user = Auth::User();
-        if($user){
-            $user->tokens()->delete();
+        if($user)
+        {
+            $user->tokens->each(function ($token) {
+                $token->delete();
+            });
             $request->user()->currentAccessToken()->delete();
-
-            return response()->json([
-                'error'=> false,
-                'message'=> 'Usuario Desconectado Com Sucesso!',
-            ]);
+            return $this->success('Usuario Desconectado Com Sucesso!', false);
         }
-        return response()->json([
-            'error'=> true,
-            'message'=> 'Usuario Invalido!',
-        ], 401);
+        return $this->error('Usuario Invalido!',401);
         
     }
-    public function DestroyUser()
+    public function destroyUser()
     {
         /** @var \App\Models\MyUserModel $user **/
         $user = Auth::User();
         if($user)
         {
-            $user->tokens()->delete();
+            $user->tokens->each(function ($token) {
+                $token->delete();
+            });
             $user->delete();
-
-            return response()->json([
-                'error'=>false,
-                'message'=>'Conta Deletada!',
-            ]);
-            
+            return $this->success('Conta Deletada!', false);
         }
-        return response()->json([
-            'error'=> true,
-            'message'=> 'Usuario Invalido!',
-        ], 401);
+        return $this->error('Usuario Invalido!',401);
     }
-    public function EditUser()
+    public function editUser()
     {
         $user = Auth::User();
         if($user)
         {
-            return response()->json([
-                'error'=> false,
-                'message'=> 'Pode atualizar!',
-                'data' =>$user,
-            ]);
+            return $this->success('Pode atualizar!', $user);
         }
-        return response()->json([
-            'error'=> true,
-            'message'=> 'Usuario Não Encontrado!',
-        ], 401);
+        return $this->error('Usuario Não Encontrado!',401);
     }
-    public function UpdateUser(Request $request)
+    public function updateUser(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
@@ -159,7 +118,9 @@ class UserControler extends Controller
              /** @var \App\Models\MyUserModel $user **/
             if (Hash::check($request->input('password'), $user->password)) 
             {
-                $user->tokens()->delete();
+                $user->tokens->each(function ($token) {
+                    $token->delete();
+                });
 
                 $user->update([
                     'name' => $request->input('name'),
@@ -170,21 +131,26 @@ class UserControler extends Controller
                 $tokenName = 'access_token';
                 $token = $user->createToken($tokenName, ['id' => $user->id, 'exp' => $expiration->timestamp])->plainTextToken;
     
-                return response()->json([
-                    'error' => false,
-                    'message' => 'Dados de usuário alterados com sucesso!',
-                    'token' => $token,
-                ]);
+                return $this->success('Dados de usuário alterados com sucesso!', $token);
             }
-            return response()->json([
-                'error'=> true,
-                'message'=> 'Senha Invalida!',
-            ]);
+            return $this->error('Senha Invalida!',401);
         }
-        return response()->json([
-            'error'=> true,
-            'message'=> 'Usuario nao encontrado!',
-        ]);
+        return $this->error('Usuario nao encontrado!',401);
     
+    }
+    public function success($message, $data)
+    {
+        return response()->json([
+            'error' => false,
+            'message' => $message,
+            'data' => $data,
+        ]);
+    }
+    public function error($message, $statuscode)
+    {
+        return response()->json([
+            'error' => true,
+            'message' => $message,
+        ], $statuscode);
     }
 }
